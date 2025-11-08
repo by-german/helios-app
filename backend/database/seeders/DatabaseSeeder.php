@@ -6,9 +6,11 @@ use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
+    # remove WithoutModelEvents to use the model events
+    // use WithoutModelEvents;
 
     /**
      * Seed the application's database.

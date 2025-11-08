@@ -21,9 +21,11 @@ class DepartmentSeeder extends Seeder
         # getting the ids of created departments
         $parentIds = Department::pluck('id');
 
-        # Create subdepartments
-        Department::factory(20)->create([
-            'parent_id'=> $parentIds->random()
-        ]);
+        # Create subdepartments with random parent ids
+        foreach (range(1, 20) as $index) {
+            Department::factory()->create([
+                'parent_id'=> $parentIds->random(),
+            ]);
+        }
     }
 }
