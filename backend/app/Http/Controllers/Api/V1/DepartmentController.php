@@ -14,13 +14,15 @@ class DepartmentController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $perPage = $request->input('per_page', 10);
+
         $departments = Department::with('parent')
-            // ->with('subdepartments')
-            // ->withCount('subdepartments')
+            ->with('subdepartments')
+            ->withCount('subdepartments')
             ->latest()
-            ->paginate(10);
+            ->paginate($perPage);
         
         return DepartmentResource::collection($departments);
     }

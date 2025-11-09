@@ -92,10 +92,10 @@ export function Division() {
     total: 0,
   });
 
-  // Fetch data with pagination
-  const fetchData = (page: number = 1) => {
+  // Fetch data with pagination and limit
+  const fetchData = (page: number = 1, pageSize: number = 10) => {
     setLoading(true);
-    fetch(`http://localhost:8000/api/v1/departments?page=${page}`)
+    fetch(`http://localhost:8000/api/v1/departments?page=${page}&per_page=${pageSize}`)
       .then((res) => res.json())
       .then((res) => {
         const data = res.data ?? [];
@@ -118,7 +118,7 @@ export function Division() {
           total: res.meta.total,
         });
 
-        // set filters dynamically for "División"
+        // set filters dynamically for "División" column
         setHeaders(
           columns.map((column) => {
             const col = column as ColumnType<DataType>;
@@ -140,11 +140,11 @@ export function Division() {
   };
 
   useEffect(() => {
-    fetchData(pagination.current);
+    fetchData(pagination.current, pagination.pageSize);
   }, []);
 
   const handleTableChange: TableProps<DataType>['onChange'] = (newPagination) => {
-    fetchData(newPagination.current || 1);
+    fetchData(newPagination.current || 1, newPagination.pageSize || 10);
   };
 
   const handleChangeColumnToSearch = (value: string) => {
@@ -176,7 +176,7 @@ export function Division() {
         <div>
           <Radio.Group>
             <Radio.Button value="list">Listado</Radio.Button>
-            <Radio.Button value="tree">Arbol</Radio.Button>
+            <Radio.Button value="tree">Árbol</Radio.Button>
           </Radio.Group>
         </div>
 
@@ -205,7 +205,11 @@ export function Division() {
         columns={headers}
         dataSource={filteredData}
         loading={loading}
-        pagination={pagination}
+        pagination={{
+          ...pagination,
+          showSizeChanger: true,
+          pageSizeOptions: [5, 10, 20, 50],
+        }}
         onChange={handleTableChange}
       />
     </div>
