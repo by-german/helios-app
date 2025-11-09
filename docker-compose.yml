@@ -1,0 +1,41 @@
+name: helios_app
+
+services:
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    working_dir: /app # optional (in Dockerfile we are using it)
+    volumes:
+      # we are not using a server like nginx. We are using only php:8.2-cli
+      # so instead to use /var/www/html we can use /app for simplicity 
+      - ./backend:/app
+      - /app/vendor # ignore vendor folder
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: db
+    restart: always
+    environment:
+      - MYSQL_DATABASE=helios
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+      - MYSQL_ROOT_PASSWORD=root_password
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+
+# create a volume for the database (db_data)
+# this is optional. In volumes ( - db_data ) when '/' is not specified
+# compose will create a volume default values
+# So, the declaration above is only for better understanding (explicit declaration)
+volumes: 
+  db_data:
+    driver: local
