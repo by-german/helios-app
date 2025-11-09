@@ -1,5 +1,5 @@
 
-import { Input, Select, Table } from 'antd';
+import { Input, Radio, Select, Table } from 'antd';
 import type { TableColumnsType, TableProps } from 'antd';
 import type { ColumnType } from 'antd/es/table';
 import { useEffect, useMemo, useState } from 'react';
@@ -158,7 +158,12 @@ export function Division() {
         marginBottom: 26
       }}
       >
-        <div>-</div>
+        <div>
+          <Radio.Group>
+            <Radio.Button value="list">Listado</Radio.Button>
+            <Radio.Button value="tree">Arbol</Radio.Button>
+          </Radio.Group>
+        </div>
 
         {/* Search action */}
         <div style={{ display: 'flex', gap: 8 }}>
