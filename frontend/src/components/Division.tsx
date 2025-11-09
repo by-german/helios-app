@@ -1,8 +1,8 @@
 
-import { Table } from 'antd';
+import { Input, Select, Table } from 'antd';
 import type { TableColumnsType, TableProps } from 'antd';
 import type { ColumnType } from 'antd/es/table';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface DataType {
   key: React.Key;
@@ -22,20 +22,7 @@ const columns: TableColumnsType<DataType> = [
       compare: (a, b) => a.division.localeCompare(b.division),
       multiple: 4,
     },
-    filters: [
-      {
-        text: 'División 1',
-        value: 'División 1',
-      },
-      {
-        text: 'División 2',
-        value: 'División 2',
-      },
-      {
-        text: 'Gibson-Jaskolski',
-        value: 'Gibson-Jaskolski',
-      },
-    ],
+    filters: [],
     filterSearch: true,
     onFilter: (value, record) => record.division.startsWith(value as string),
   },
@@ -63,26 +50,11 @@ const columns: TableColumnsType<DataType> = [
       multiple: 1,
     },
     filters: [
-      {
-        text: 'Nivel 1',
-        value: 1,
-      },
-      {
-        text: 'Nivel 2',
-        value: 2,
-      },
-      {
-        text: 'Nivel 3',
-        value: 3,
-      },
-      {
-        text: 'Nivel 4',
-        value: 4,
-      },
-      {
-        text: 'Nivel 5',
-        value: 5,
-      },
+      { text: 'Nivel 1', value: 1, },
+      { text: 'Nivel 2', value: 2, },
+      { text: 'Nivel 3', value: 3, },
+      { text: 'Nivel 4', value: 4, },
+      { text: 'Nivel 5', value: 5, },
     ]
   },
   {
@@ -112,6 +84,8 @@ interface DepartmentsResponse {
 export function Division() {
   const [dataSource, setDataSource] = useState([]);
   const [headers, setHeaders] = useState(columns);
+  const [searchText, setSearchText] = useState('');
+  const [searchedColumn, setSearchedColumn] = useState('');
 
   // fetch data (departments)
   useEffect(() => {
@@ -132,7 +106,7 @@ export function Division() {
 
         // set filters for division
         setHeaders(
-            columns.map((column) => {
+          columns.map((column) => {
             const col = column as ColumnType<DataType>;
             if (col.dataIndex === "division") {
               return {
@@ -151,21 +125,69 @@ export function Division() {
       .catch(console.error)
   }, [])
 
-  const onChange: TableProps<DataType>['onChange'] = (pagination, filters, sorter, extra) => {
+  const handleChangeTable: TableProps<DataType>['onChange'] = (pagination, filters, sorter, extra) => {
     console.log('params', pagination, filters, sorter, extra);
   }
 
+  const handleChangeColumnToSearch = (value: string) => {
+    setSearchedColumn(value);
+  };
+
+  const handleSearch = (value: string) => {
+    console.log('search:', value);
+    setSearchText(value);
+  };
+
+  const filteredData = useMemo(() => {
+    if (!searchText || !searchedColumn) return dataSource;
+
+    return dataSource.filter((item) => {
+      const value = item[searchedColumn as keyof DataType];
+      if (value === undefined || value === null) return false;
+
+      return String(value).toLowerCase().includes(searchText.toLowerCase());
+    });
+  }, [searchText, searchedColumn, dataSource]);
+
   return (
     <div>
-      <div>
 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginBottom: 26
+      }}
+      >
+        <div>-</div>
+
+        {/* Search action */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Select
+            defaultValue="Columnas"
+            style={{ width: 150 }}
+            onChange={handleChangeColumnToSearch}
+            options={columns.map((column: ColumnType<DataType>) => {
+              return {
+                value: column.dataIndex,
+                label: column.title
+              }
+            })}
+          />
+
+          <Input.Search
+            placeholder="Buscar"
+            style={{ width: 200 }}
+            // onSearch={handleSearch}
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       <Table<DataType>
         style={{ flex: 1 }}
         columns={headers}
-        dataSource={dataSource}
-        onChange={onChange}
+        dataSource={filteredData}
+        onChange={handleChangeTable}
       />
     </div>
   )
