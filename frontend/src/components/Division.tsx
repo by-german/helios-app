@@ -1,4 +1,3 @@
-
 import { Input, Radio, Select, Table } from 'antd';
 import type { TableColumnsType, TableProps } from 'antd';
 import type { ColumnType } from 'antd/es/table';
@@ -50,12 +49,12 @@ const columns: TableColumnsType<DataType> = [
       multiple: 1,
     },
     filters: [
-      { text: 'Nivel 1', value: 1, },
-      { text: 'Nivel 2', value: 2, },
-      { text: 'Nivel 3', value: 3, },
-      { text: 'Nivel 4', value: 4, },
-      { text: 'Nivel 5', value: 5, },
-    ]
+      { text: 'Nivel 1', value: 1 },
+      { text: 'Nivel 2', value: 2 },
+      { text: 'Nivel 3', value: 3 },
+      { text: 'Nivel 4', value: 4 },
+      { text: 'Nivel 5', value: 5 },
+    ],
   },
   {
     title: 'Subdivisiones',
@@ -68,7 +67,7 @@ const columns: TableColumnsType<DataType> = [
   {
     title: 'Embajadores',
     dataIndex: 'embassadors',
-  }
+  },
 ];
 
 interface DepartmentsResponse {
@@ -78,37 +77,52 @@ interface DepartmentsResponse {
   employee_count: number;
   level: number;
   superior: DepartmentsResponse;
-  subdepartments_count: number
+  subdepartments_count: number;
 }
 
 export function Division() {
-  const [dataSource, setDataSource] = useState([]);
+  const [dataSource, setDataSource] = useState<DataType[]>([]);
   const [headers, setHeaders] = useState(columns);
   const [searchText, setSearchText] = useState('');
   const [searchedColumn, setSearchedColumn] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
-  // fetch data (departments)
-  useEffect(() => {
-    fetch('http://localhost:8000/api/v1/departments').then(res => res.json())
+  // Fetch data with pagination
+  const fetchData = (page: number = 1) => {
+    setLoading(true);
+    fetch(`http://localhost:8000/api/v1/departments?page=${page}`)
+      .then((res) => res.json())
       .then((res) => {
-        const data = res.data ?? []
-        setDataSource(data.map((data: DepartmentsResponse) => {
-          return {
-            key: data.id,
-            division: data.name,
-            parentDivision: data.superior?.name ?? '',
-            colaborators: data.employee_count,
-            level: data.level,
-            subDivisions: data.subdepartments_count,
-            embassadors: data.ambassador_name
-          }
-        }))
+        const data = res.data ?? [];
+        setDataSource(
+          data.map((d: DepartmentsResponse) => ({
+            key: d.id,
+            division: d.name,
+            parentDivision: d.superior?.name ?? '',
+            colaborators: d.employee_count,
+            level: d.level,
+            subDivisions: d.subdepartments_count,
+            embassadors: d.ambassador_name,
+          }))
+        );
 
-        // set filters for division
+        // update pagination info from API
+        setPagination({
+          current: res.meta.current_page,
+          pageSize: res.meta.per_page,
+          total: res.meta.total,
+        });
+
+        // set filters dynamically for "División"
         setHeaders(
           columns.map((column) => {
             const col = column as ColumnType<DataType>;
-            if (col.dataIndex === "division") {
+            if (col.dataIndex === 'division') {
               return {
                 ...col,
                 filters: data.map((d: DepartmentsResponse) => ({
@@ -119,44 +133,45 @@ export function Division() {
             }
             return col;
           })
-        )
-
+        );
       })
       .catch(console.error)
-  }, [])
+      .finally(() => setLoading(false));
+  };
 
-  const handleChangeTable: TableProps<DataType>['onChange'] = (pagination, filters, sorter, extra) => {
-    console.log('params', pagination, filters, sorter, extra);
-  }
+  useEffect(() => {
+    fetchData(pagination.current);
+  }, []);
+
+  const handleTableChange: TableProps<DataType>['onChange'] = (newPagination) => {
+    fetchData(newPagination.current || 1);
+  };
 
   const handleChangeColumnToSearch = (value: string) => {
     setSearchedColumn(value);
   };
 
   const handleSearch = (value: string) => {
-    console.log('search:', value);
     setSearchText(value);
   };
 
   const filteredData = useMemo(() => {
     if (!searchText || !searchedColumn) return dataSource;
-
     return dataSource.filter((item) => {
       const value = item[searchedColumn as keyof DataType];
       if (value === undefined || value === null) return false;
-
       return String(value).toLowerCase().includes(searchText.toLowerCase());
     });
   }, [searchText, searchedColumn, dataSource]);
 
   return (
     <div>
-
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        marginBottom: 26
-      }}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginBottom: 26,
+        }}
       >
         <div>
           <Radio.Group>
@@ -171,18 +186,15 @@ export function Division() {
             defaultValue="Columnas"
             style={{ width: 150 }}
             onChange={handleChangeColumnToSearch}
-            options={columns.map((column: ColumnType<DataType>) => {
-              return {
-                value: column.dataIndex,
-                label: column.title
-              }
-            })}
+            options={columns.map((column: ColumnType<DataType>) => ({
+              value: column.dataIndex,
+              label: column.title,
+            }))}
           />
 
           <Input.Search
             placeholder="Buscar"
             style={{ width: 200 }}
-            // onSearch={handleSearch}
             onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
@@ -192,8 +204,10 @@ export function Division() {
         style={{ flex: 1 }}
         columns={headers}
         dataSource={filteredData}
-        onChange={handleChangeTable}
+        loading={loading}
+        pagination={pagination}
+        onChange={handleTableChange}
       />
     </div>
-  )
+  );
 }
